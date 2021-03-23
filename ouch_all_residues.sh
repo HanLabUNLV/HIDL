@@ -1,0 +1,21 @@
+#!/bin/bash
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % A
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % C
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % D
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % E
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % F
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % G
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % H
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % I
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % K
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % L
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % M
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % N
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % P
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % Q
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % R
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % S
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % T
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % V
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % W
+find LinkerLengthsCorrected -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.R % Y

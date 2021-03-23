@@ -1,0 +1,21 @@
+#!/bin/bash
+find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % A
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % C
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % D
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % E
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % F
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % G
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % H
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % I
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % K
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % L
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % M
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % N
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % P
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % Q
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % R
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % S
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % T
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % V
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % W
+#find LinkerLengthsKCORerun -name '*lengths.txt' | parallel -I% Rscript ouch_parallel_1.fixednewicks.R % Y
