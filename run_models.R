@@ -3,17 +3,32 @@ library(phytools)
 library(mvMORPH)
 library(parallel)
 library(ggplot2)
+library(numDeriv)
+
 nb_cores = 4L
 
 args = commandArgs(trailingOnly=TRUE)
 dirname = args[1]
 seqname = args[2]
-#dirname = "LinkerLengthsKCO/" 
+dirname = "LinkerLengthsKCO/" 
 #seqname = "ENSGT00390000000002_1_Linker_1_2" 
 #seqname = "ENSGT00390000000018_1_Linker_2_3" 
-#seqname = "ENSGT00530000063722_0_Linker_1_2"
-outdir = "model_results/"
+#seqname = "ENSGT00550000074364_5_Linker_0_4"
+seqname = "ENSGT00550000074260_2_Linker_0_2"
+outdir = "./"
 
+
+gather_hessians <- function(fit_mvOU_list)
+{
+  hess.posdef = rep(NULL, 16)
+  for (i in 1:length(fit_mvOU_list)) {
+    if (!is.null(fit_mvOU_list[[i]])) {
+      hess <- hessian(x=c(fit_mvOU_list[[i]]$alpha[1,1], fit_mvOU_list[[i]]$alpha[2,2], fit_mvOU_list[[i]]$sigma[1,1], fit_mvOU_list[[i]]$theta), fit_mvOU_list[[i]]$llik)
+      hess.posdef[i] = all(eigen(hess)$value > 0)
+    }
+  }
+  return (hess.posdef)
+}
 
 bootstrap_mv_BM_OU <- function(aa, seqname, fit_mvBM, fit_mvOU, vcv="fixedRoot", opt_method="BFGS", nsim=100 ) {
 
@@ -28,7 +43,7 @@ bootstrap_mv_BM_OU <- function(aa, seqname, fit_mvBM, fit_mvOU, vcv="fixedRoot",
   repeat{
     simul_mvBM <- simulate(fit_mvBM, tree=tree, nsim=nsim) 
     tmpBMBM <- lapply(simul_mvBM, function(x) mvBM(tree, x, echo=F, diagnostic=F, model="BM1", scale.height=TRUE, param=list(constraint="equaldiagonal"))) 
-    tmpBMOU <- lapply(simul_mvBM, function(x) mvOU(tree, x, echo=F, diagnostic=F, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv=vcv), optimization=opt_method, control = list(maxit = 100000, parscale=c(1000,10,1) ))) 
+    tmpBMOU <- lapply(simul_mvBM, function(x) mvOU(tree, x, echo=F, diagnostic=F, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv=vcv), optimization=opt_method, control = list(maxit = 10000, parscale=c(1000,10,1) ))) 
     goodsamples = !sapply(tmpBMBM, inherits, "try-error") & !sapply(tmpBMOU, inherits, "try-error")
     goodsamples = goodsamples & !sapply(tmpBMBM, "[[", "convergence") & !sapply(tmpBMBM, "[[", "hess.values") & !sapply(tmpBMOU, "[[", "convergence") & !sapply(tmpBMOU, "[[", "hess.values")
     if (sum(goodsamples)) {
@@ -37,7 +52,7 @@ bootstrap_mv_BM_OU <- function(aa, seqname, fit_mvBM, fit_mvOU, vcv="fixedRoot",
     }
     total = total+sum(goodsamples)
     #bootstrapBMBM <- mclapply(1:nsim, function(x){ mvBM(tree, simul_mvBM[[x]], echo=F, diagnostic=F, model="BM1", scale.height=TRUE, param=list(constraint="equaldiagonal")) },   mc.cores = getOption("mc.cores", nb_cores))
-    #bootstrapBMOU <- mclapply(1:nsim, function(x){ mvOU(tree, simul_mvBM[[x]], echo=F, diagnostic=F, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv=vcv), optimization=opt_method, control = list(maxit = 100000, parscale=c(1000,10,1) )) },   mc.cores = getOption("mc.cores", nb_cores))
+    #bootstrapBMOU <- mclapply(1:nsim, function(x){ mvOU(tree, simul_mvBM[[x]], echo=F, diagnostic=F, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv=vcv), optimization=opt_method, control = list(maxit = 10000, parscale=c(1000,10,1) )) },   mc.cores = getOption("mc.cores", nb_cores))
     if( total >= nsim | rep > 10){
         break
     }
@@ -49,7 +64,7 @@ bootstrap_mv_BM_OU <- function(aa, seqname, fit_mvBM, fit_mvOU, vcv="fixedRoot",
   repeat{  
     simul_mvOU <- simulate(fit_mvOU, tree=tree, nsim=nsim) 
     tmpOUBM <- mclapply(1:nsim, function(x){ mvBM(tree, simul_mvOU[[x]], echo=F, diagnostic=F, model="BM1", scale.height=TRUE, param=list(constraint="equaldiagonal")) },   mc.cores = getOption("mc.cores", nb_cores))
-    tmpOUOU <- mclapply(1:nsim, function(x){ mvOU(tree, simul_mvOU[[x]], echo=F, diagnostic=F, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv=vcv), optimization=opt_method, control = list(maxit = 100000, parscale=c(1000,10,1) )) },   mc.cores = getOption("mc.cores", nb_cores))
+    tmpOUOU <- mclapply(1:nsim, function(x){ mvOU(tree, simul_mvOU[[x]], echo=F, diagnostic=F, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv=vcv), optimization=opt_method, control = list(maxit = 10000, parscale=c(1000,10,1) )) },   mc.cores = getOption("mc.cores", nb_cores))
     goodsamples = !sapply(tmpOUBM, inherits, "try-error") & !sapply(tmpOUOU, inherits, "try-error")
     goodsamples = goodsamples & !sapply(tmpOUBM, "[[", "convergence") & !sapply(tmpOUBM, "[[", "hess.values") & !sapply(tmpOUOU, "[[", "convergence") & !sapply(tmpOUOU, "[[", "hess.values")
     if (sum(goodsamples)) {
@@ -58,7 +73,7 @@ bootstrap_mv_BM_OU <- function(aa, seqname, fit_mvBM, fit_mvOU, vcv="fixedRoot",
     }
     total = total+sum(goodsamples)
     #bootstrapOUBM <- lapply(simul_mvOU, function(x) mvBM(tree, x, echo=F, diagnostic=F, model="BM1", scale.height=TRUE, param=list(constraint="equaldiagonal"))) 
-    #bootstrapOUOU <- lapply(simul_mvOU, function(x) mvOU(tree, x, echo=F, diagnostic=F, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv=vcv), optimization=opt_method, control = list(maxit = 100000, parscale=c(1000,10,1) ))) 
+    #bootstrapOUOU <- lapply(simul_mvOU, function(x) mvOU(tree, x, echo=F, diagnostic=F, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv=vcv), optimization=opt_method, control = list(maxit = 10000, parscale=c(1000,10,1) ))) 
     if( total >= nsim | rep > 10){
       break
     }
@@ -224,7 +239,7 @@ for (aa in AAcodes) {
   #fitOU<-fitContinuous(tree,aa_dat[aa], model="OU", control=list(niter=1000))
   #fitOU
 
-  results = data.frame(matrix(nrow=1, ncol=158))
+  results = data.frame(matrix(nrow=1, ncol=264))
   r_i = 1
   # mvMORPH
   # uv
@@ -246,15 +261,23 @@ for (aa in AAcodes) {
   names(results)[r_i:(r_i+5)] = paste0("mvBM_", c("sigma0", "sigma1", "theta0", "theta1", "lnL", "AICc"))
   results[r_i:(r_i+5)] = c(fit_mvBM$sigma[1,], fit_mvBM$theta, fit_mvBM$LogLik, fit_mvBM$AICc)
   r_i = r_i+6
-  fit_mvOU_list <- vector("list", 8)
-  try({fit_mvOU_list[[1]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="fixedRoot"), optimization="BFGS", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
-  #try({fit_mvOU_list[[2]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="fixedRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
-  try({fit_mvOU_list[[3]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="fixedRoot"), optimization="BFGS", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
-  #try({fit_mvOU_list[[4]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="fixedRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
-  try({fit_mvOU_list[[5]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="randomRoot"), optimization="BFGS", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
-  #try({fit_mvOU_list[[6]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="randomRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
-  try({fit_mvOU_list[[7]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="randomRoot"), optimization="BFGS", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
-  #try({fit_mvOU_list[[8]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="randomRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
+  fit_mvOU_list <- vector("list", 16)
+  try({fit_mvOU_list[[1]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="fixedRoot"), optimization="BFGS", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[2]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="fixedRoot"), optimization="nlm", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[3]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="fixedRoot"), optimization="Rcgmin", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[4]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="fixedRoot"), optimization="Rvmmin", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[5]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="fixedRoot"), optimization="BFGS", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[6]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="fixedRoot"), optimization="nlm", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[7]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="fixedRoot"), optimization="Rcgmin", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[8]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="fixedRoot"), optimization="Rvmmin", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[9]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="randomRoot"), optimization="BFGS", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[10]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="randomRoot"), optimization="nlm", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[11]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="randomRoot"), optimization="Rcgmin", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[12]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="randomRoot"), optimization="Rvmmin", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[13]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="randomRoot"), optimization="BFGS", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[14]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="randomRoot"), optimization="nlm", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[15]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="randomRoot"), optimization="Rcgmin", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
+  try({fit_mvOU_list[[16]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="randomRoot"), optimization="Rvmmin", control = list(maxit = 10000, parscale=c(1000,10,1)) , echo=F)})
 
   nullmat <- list(matrix(nrow=2,ncol=2))
   sigma <- sapply(fit_mvOU_list, "[[", "sigma")
@@ -266,13 +289,13 @@ for (aa in AAcodes) {
   alpha <- t(sapply(alpha, "[" )[c(1,4),])
   colnames(alpha) <- c("alpha", "alphatotal")
   theta <- sapply(fit_mvOU_list, "[[", "theta")
-  idx = sapply(theta, is.null)&c(TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)
+  idx = sapply(theta, is.null)&c(rep(TRUE, length(fit_mvOU_list)/2),rep(FALSE,length(fit_mvOU_list)/2))
   theta[idx]  <- rep(nullmat, sum(idx))
-  idx = sapply(theta, is.null)&c(FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE)
+  idx = sapply(theta, is.null)&c(rep(FALSE, length(fit_mvOU_list)/2),rep(TRUE,length(fit_mvOU_list)/2))
   theta[idx]  <- rep(list(matrix(nrow=1,ncol=2)), sum(idx))
-  theta_f =  t(matrix(unlist(theta[1:4]), nrow=4))
-  theta_r =  t(matrix(unlist(theta[5:8]), nrow=2))
-  theta_r <- cbind(matrix(rep(0,4), nrow=4), theta_r[,1], matrix(rep(0,4),nrow=4), theta_r[,2] )
+  theta_f =  t(matrix(unlist(theta[1:(length(fit_mvOU_list)/2)]), nrow=4))
+  theta_r =  t(matrix(unlist(theta[(length(fit_mvOU_list)/2)+1:length(fit_mvOU_list)]), nrow=2))
+  theta_r <- cbind(matrix(rep(0,nrow(theta_r)), nrow=nrow(theta_r)), theta_r[,1], matrix(rep(0,nrow=nrow(theta_r)),nrow=nrow(theta_r)), theta_r[,2] )
   theta <- rbind(theta_f, theta_r)
   colnames(theta) <- c("theta0", "theta1", "thetatotal0", "thetatotal1")
   lnL <- sapply(fit_mvOU_list, "[[", "LogLik")
@@ -284,9 +307,7 @@ for (aa in AAcodes) {
   conv <- sapply(fit_mvOU_list, "[[", "convergence")
   conv [sapply(conv,is.null)] <- NA
   conv <- unlist(conv)
-  hess <- sapply(fit_mvOU_list, "[[", "hess.values")
-  hess [sapply(hess,is.null)] <- NA
-  hess <- unlist(hess)
+  hess <- !gather_hessians(fit_mvOU_list)
   params <- sapply(fit_mvOU_list, "[[", "param")
   opt <- sapply(params, "[[", "optimization")
   opt [sapply(opt,is.null)] <- NA
@@ -294,14 +315,15 @@ for (aa in AAcodes) {
   root <- sapply(params, "[[", "root")
   root [sapply(root,is.null)] <- NA
   root <- unlist(root)
-  mvOUresults <- cbind.data.frame(root, opt, sigma, alpha, theta, root, AICc, conv, hess)
+  mvOUresults <- cbind.data.frame(root, opt, sigma, alpha, theta, lnL, AICc, conv, hess)
   mvOUvector <- unlist(mvOUresults)
-  names(results)[r_i:(r_i+111)] = names(mvOUvector)
-  results[r_i:(r_i+111)] = mvOUvector
-  r_i = r_i+112
+  names(results)[r_i:(r_i+223)] = names(mvOUvector)
+  results[r_i:(r_i+223)] = mvOUvector
+  r_i = r_i+224
   write.table(results, resultfile, sep="\t", quote=FALSE, row.names=FALSE)
 
-  goodfitidx <- !conv & !hess
+  #goodfitidx <- !conv & !hess
+  goodfitidx <- !conv
   if (any(goodfitidx)) {
     minAICc <- min(mvOUresults[goodfitidx,"AICc"], na.rm=TRUE)
     if (minAICc < fit_mvBM$AICc) {
