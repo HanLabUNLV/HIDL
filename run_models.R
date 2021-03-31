@@ -8,8 +8,10 @@ nb_cores = 4L
 args = commandArgs(trailingOnly=TRUE)
 dirname = args[1]
 seqname = args[2]
-dirname = "LinkerLengthsKCO/"
-seqname = "ENSGT00390000000018_0_Linker_5_6"
+#dirname = "LinkerLengthsKCO/" 
+#seqname = "ENSGT00390000000002_1_Linker_1_2" 
+#seqname = "ENSGT00390000000018_1_Linker_2_3" 
+#seqname = "ENSGT00530000063722_0_Linker_1_2"
 outdir = "model_results/"
 
 
@@ -40,6 +42,7 @@ bootstrap_mv_BM_OU <- function(aa, seqname, fit_mvBM, fit_mvOU, vcv="fixedRoot",
         break
     }
     rep = rep+1
+    print (paste(c("bootstrapBM:", total, rep)))
   } 
   rep = 0 
   total = 1
@@ -60,6 +63,7 @@ bootstrap_mv_BM_OU <- function(aa, seqname, fit_mvBM, fit_mvOU, vcv="fixedRoot",
       break
     }
     rep = rep+1
+    print (paste(c("bootstrapOU:", total, rep)))
   }
 
   nsim <- min (sum(!sapply(bootstrapBMBM, is.null)), sum(!sapply(bootstrapOUBM, is.null))) 
@@ -127,6 +131,8 @@ cntdata <- cntdata[tree$tip.label,]
 AAcodes <- colnames(cntdata)[4:23]
 dat <- cntdata[,AAcodes]/cntdata$totalNoGap
 if (nrow(dat) < 10) {
+  print(tree)
+  print(cntdata)
   print("not enough tips in the phylogeny")
   quit()
 }
@@ -136,11 +142,11 @@ rownames(cnt) <- rownames(dat)
 cnt[is.na(cnt)] <- 0
 total <- data.frame(total=rep(0, nrow(dat)), row.names = rownames(dat))
 gtlenname = paste0("GTLengthsKCO/",treename,".lengths.txt")
-if (file.exists(gtlenname)) {
-  gt <- read.table(gtlenname, header=TRUE)
-  total <- gt$total
-  cnt <- gt[,-1]
-} else {
+#if (file.exists(gtlenname)) {
+#  gt <- read.table(gtlenname, header=TRUE)
+#  total <- gt$total
+#  cnt <- gt[,-1]
+#} else {
   # get all linkers and domains from same gene tree
   files <- list.files(path='LinkerLengthsKCO/', pattern=paste0( treename, "_*"), full.names=TRUE, recursive=FALSE)
   files <- c(files, list.files(path='DomainLengthsKCO/', pattern=paste0( treename, "_*"), full.names=TRUE, recursive=FALSE))
@@ -152,8 +158,10 @@ if (file.exists(gtlenname)) {
     total <- total + data$totalNoGap
   }
   gt <- cbind.data.frame(total, cnt)
-  write.table(gt, gtlenname, sep="\t", quote=FALSE)
-}
+  if (!file.exists(gtlenname)) {
+    write.table(gt, gtlenname, sep="\t", quote=FALSE)
+  }
+#}
 allprops <- cnt/total[,1]
 
 
@@ -163,7 +171,10 @@ allprops <- asinTransform(allprops)
 
 
 for (aa in AAcodes) {
-
+  resultfile = paste0(outdir, aa, '_', seqname, ".txt")
+  if (file.exists(resultfile)) {
+    next;
+  }
   print(aa)
   aa_dat <- dat[aa]
   if (sum(aa_dat) == 0) {
@@ -237,40 +248,62 @@ for (aa in AAcodes) {
   r_i = r_i+6
   fit_mvOU_list <- vector("list", 8)
   try({fit_mvOU_list[[1]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="fixedRoot"), optimization="BFGS", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
-  try({fit_mvOU_list[[2]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="fixedRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
+  #try({fit_mvOU_list[[2]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="fixedRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
   try({fit_mvOU_list[[3]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="fixedRoot"), optimization="BFGS", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
-  try({fit_mvOU_list[[4]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="fixedRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
+  #try({fit_mvOU_list[[4]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="fixedRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
   try({fit_mvOU_list[[5]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="randomRoot"), optimization="BFGS", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
-  try({fit_mvOU_list[[6]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="randomRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
+  #try({fit_mvOU_list[[6]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", vcv="randomRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
   try({fit_mvOU_list[[7]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="randomRoot"), optimization="BFGS", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
-  try({fit_mvOU_list[[8]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="randomRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
- 
-  sigma <- t(sapply(fit_mvOU_list, "[[", "sigma")[1:2,])
+  #try({fit_mvOU_list[[8]] <- mvOU(tree, mv_dat, model="OU1", scale.height=TRUE, param=list(decomp="diagonal", decompSigma="equaldiagonal", sigma=fit_mvBM$sigma[1,1], vcv="randomRoot"), optimization="SANN", control = list(maxit = 100000, parscale=c(1000,10,1)) , echo=F)})
+
+  nullmat <- list(matrix(nrow=2,ncol=2))
+  sigma <- sapply(fit_mvOU_list, "[[", "sigma")
+  sigma[sapply(sigma, is.null)]  <- rep(nullmat, sum(sapply(sigma, is.null))) 
+  sigma <- t(sapply(sigma, "[" )[1:2,])
   colnames(sigma) <- c("sigma", "sigmacov")
-  alpha <- t(sapply(fit_mvOU_list, "[[", "alpha")[c(1,4),])
+  alpha <- sapply(fit_mvOU_list, "[[", "alpha")
+  alpha[sapply(alpha, is.null)]  <- rep(nullmat, sum(sapply(alpha, is.null)))
+  alpha <- t(sapply(alpha, "[" )[c(1,4),])
   colnames(alpha) <- c("alpha", "alphatotal")
   theta <- sapply(fit_mvOU_list, "[[", "theta")
+  idx = sapply(theta, is.null)&c(TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE)
+  theta[idx]  <- rep(nullmat, sum(idx))
+  idx = sapply(theta, is.null)&c(FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE)
+  theta[idx]  <- rep(list(matrix(nrow=1,ncol=2)), sum(idx))
   theta_f =  t(matrix(unlist(theta[1:4]), nrow=4))
   theta_r =  t(matrix(unlist(theta[5:8]), nrow=2))
   theta_r <- cbind(matrix(rep(0,4), nrow=4), theta_r[,1], matrix(rep(0,4),nrow=4), theta_r[,2] )
   theta <- rbind(theta_f, theta_r)
   colnames(theta) <- c("theta0", "theta1", "thetatotal0", "thetatotal1")
-  lnL <- unlist(sapply(fit_mvOU_list, "[[", "LogLik"))
-  AICc <- unlist(sapply(fit_mvOU_list, "[[", "AICc"))
-  conv <- unlist(sapply(fit_mvOU_list, "[[", "convergence"))
-  hess <- unlist(sapply(fit_mvOU_list, "[[", "hess.values"))
+  lnL <- sapply(fit_mvOU_list, "[[", "LogLik")
+  lnL [sapply(lnL,is.null)] <- NA
+  lnL <- unlist(lnL)
+  AICc <- sapply(fit_mvOU_list, "[[", "AICc")
+  AICc [sapply(AICc,is.null)] <- NA
+  AICc <- unlist(AICc)
+  conv <- sapply(fit_mvOU_list, "[[", "convergence")
+  conv [sapply(conv,is.null)] <- NA
+  conv <- unlist(conv)
+  hess <- sapply(fit_mvOU_list, "[[", "hess.values")
+  hess [sapply(hess,is.null)] <- NA
+  hess <- unlist(hess)
   params <- sapply(fit_mvOU_list, "[[", "param")
-  opt <- unlist(params["optimization",])
-  root <- unlist(params["root",])
-  mvOUresults <- cbind.data.frame(root, opt, sigma, alpha, theta, lnL, AICc, conv, hess)
+  opt <- sapply(params, "[[", "optimization")
+  opt [sapply(opt,is.null)] <- NA
+  opt <- unlist(opt)
+  root <- sapply(params, "[[", "root")
+  root [sapply(root,is.null)] <- NA
+  root <- unlist(root)
+  mvOUresults <- cbind.data.frame(root, opt, sigma, alpha, theta, root, AICc, conv, hess)
   mvOUvector <- unlist(mvOUresults)
   names(results)[r_i:(r_i+111)] = names(mvOUvector)
   results[r_i:(r_i+111)] = mvOUvector
   r_i = r_i+112
+  write.table(results, resultfile, sep="\t", quote=FALSE, row.names=FALSE)
 
   goodfitidx <- !conv & !hess
   if (any(goodfitidx)) {
-    minAICc <- min(mvOUresults[goodfitidx,"AICc"])
+    minAICc <- min(mvOUresults[goodfitidx,"AICc"], na.rm=TRUE)
     if (minAICc < fit_mvBM$AICc) {
       bestfitidx <- which(goodfitidx & mvOUresults[,"AICc"]==minAICc)
       fit_mvOU <- fit_mvOU_list[[bestfitidx]]
@@ -285,14 +318,14 @@ for (aa in AAcodes) {
       } else {
         vcv = "randomRoot"
       }
-      ret = bootstrap_mv_BM_OU(aa, seqname, fit_mvBM, fit_mvOU, vcv)
-      if (ret) {
-        names(results)[r_i:(r_i+length(ret)-1)] = names(ret)
-        results[r_i:(r_i+length(ret)-1)] = ret
-      }
+      #ret = bootstrap_mv_BM_OU(aa, seqname, fit_mvBM, fit_mvOU, vcv)
+      #if (ret) {
+      #  names(results)[r_i:(r_i+length(ret)-1)] = names(ret)
+      #  results[r_i:(r_i+length(ret)-1)] = ret
+      #}
     }
   }
-  write.table(results, paste0(outdir, aa, '_', seqname, ".txt"), sep="\t", quote=FALSE, row.names=FALSE)
+  write.table(results, resultfile, sep="\t", quote=FALSE, row.names=FALSE)
   
 }
 
